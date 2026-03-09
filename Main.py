@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 import json
 import mido
@@ -10,14 +11,21 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from tkinterdnd2 import DND_FILES, TkinterDnD
 
-# Intentar importar fluidsynth
+
+def get_resource_path(filename):
+    """ Busca el archivo en la carpeta del script o dentro del bundle de PyInstaller """
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, filename)
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), filename)
+
+# Try to import fluidsynth
 try:
     import fluidsynth
     HAS_FLUIDSYNTH = True
 except ImportError:
     HAS_FLUIDSYNTH = False
 
-# --- CONSTANTES MIDI ---
+# --- MIDI CONSTANTS ---
 GM_INST_NAMES = [
     "Acoustic Grand Piano", "Bright Acoustic Piano", "Electric Grand Piano", "Honky-tonk Piano",
     "Electric Piano 1", "Electric Piano 2", "Harpsichord", "Clavi", "Celesta", "Glockenspiel",
@@ -68,7 +76,7 @@ def clamp(v, mn=0, mx=127): return max(mn, min(mx, int(v)))
 class AdvancedMidiEditor(tk.Toplevel):
     def __init__(self, parent):
         super().__init__(parent)
-        self.title("MIDI Editor Pro - Compare & Fix")
+        self.title("General MIDIfyer 1.0")
         self.geometry("1300x750")
         self.config(bg="#1a1a1a")
 
@@ -95,9 +103,9 @@ class AdvancedMidiEditor(tk.Toplevel):
     def _build_ui(self):
         header = tk.Frame(self, bg="#2c3e50", pady=10)
         header.pack(fill="x")
-        self.lbl_info = tk.Label(header, text="Arrastra un .MID y un .SF2 para empezar", fg="white", bg="#2c3e50", font=("Arial", 12, "bold"))
+        self.lbl_info = tk.Label(header, text="Drag and drop a .MID and .SF2 to start", fg="white", bg="#2c3e50", font=("Arial", 12, "bold"))
         self.lbl_info.pack()
-        self.lbl_sf2 = tk.Label(header, text="SF2: Ninguno", fg="#f1c40f", bg="#2c3e50", font=("Arial", 10))
+        self.lbl_sf2 = tk.Label(header, text="SF2: None", fg="#f1c40f", bg="#2c3e50", font=("Arial", 10))
         self.lbl_sf2.pack()
 
         mf = tk.Frame(self, bg="#1a1a1a")
@@ -113,14 +121,14 @@ class AdvancedMidiEditor(tk.Toplevel):
 
         btn_f = tk.Frame(self, bg="#111", pady=15)
         btn_f.pack(fill="x", side="bottom")
-        self.btn_play = tk.Button(btn_f, text="▶ REPRODUCIR ORIGINAL", bg="#9b59b6", fg="white", width=22, font=("Arial", 9, "bold"), command=self.toggle_playback)
+        self.btn_play = tk.Button(btn_f, text="▶ PLAY ORIGINAL", bg="#9b59b6", fg="white", width=22, font=("Arial", 9, "bold"), command=self.toggle_playback)
         self.btn_play.pack(side="left", padx=(15, 5))
-        tk.Label(btn_f, text="Empezar en (s):", fg="white", bg="#111").pack(side="left", padx=(5, 2))
+        tk.Label(btn_f, text="Start at (s):", fg="white", bg="#111").pack(side="left", padx=(5, 2))
         self.start_time_var = tk.IntVar(value=0)
         tk.Spinbox(btn_f, from_=0, to=9999, increment=2, textvariable=self.start_time_var, width=4, bg="#333", fg="white").pack(side="left", padx=(0, 15))
         tk.Button(btn_f, text="PREVIEW MIDI (TEMP)", bg="#3498db", fg="white", width=20, command=self.preview_midi).pack(side="left", padx=15)
-        tk.Button(btn_f, text="EXPORTAR MIDI", bg="#2ecc71", fg="white", width=15, command=self.export_midi).pack(side="right", padx=15)
-        tk.Button(btn_f, text="GUARDAR CONFIG", bg="#f39c12", fg="white", width=20, command=self.save_config).pack(side="right", padx=15)
+        tk.Button(btn_f, text="EXPORT MIDI", bg="#2ecc71", fg="white", width=15, command=self.export_midi).pack(side="right", padx=15)
+        tk.Button(btn_f, text="SAVE CONFIG", bg="#f39c12", fg="white", width=20, command=self.save_config).pack(side="right", padx=15)
 
     def _setup_dnd(self):
         self.drop_target_register(DND_FILES)
@@ -134,7 +142,7 @@ class AdvancedMidiEditor(tk.Toplevel):
 
     def load_sf2(self, path):
         if not HAS_FLUIDSYNTH: 
-            messagebox.showerror("Error", "Fluidsynth no disponible.")
+            messagebox.showerror("Error", "Fluidsynth not available.")
             return
         self.sf2_path = path
         self.lbl_sf2.config(text=f"SF2: {os.path.basename(path)}")
@@ -142,8 +150,8 @@ class AdvancedMidiEditor(tk.Toplevel):
         self.synth = fluidsynth.Synth()
         self.synth.start(driver="dsound" if os.name == "nt" else "alsa")
         self.sfid = self.synth.sfload(self.sf2_path)
-        tune_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tuning.sf2")
-        if not os.path.exists(tune_path): tune_path = "tuning.sf2"
+        
+        tune_path = get_resource_path("tuning.sf2")
         if os.path.exists(tune_path):
             self.sfid_tune = self.synth.sfload(tune_path)
             self.synth.program_select(15, self.sfid_tune, 0, 0)
@@ -192,7 +200,6 @@ class AdvancedMidiEditor(tk.Toplevel):
         self.any_solo = any(m['solo'] for m in self.live_mapping.values())
 
     def create_row(self, prog):
-        # Frame de la fila
         row_bg = "#222"
         f = tk.Frame(self.sf, bg=row_bg, pady=5)
         f.pack(fill="x", padx=10, pady=2)
@@ -223,7 +230,7 @@ class AdvancedMidiEditor(tk.Toplevel):
         action_frame = tk.Frame(f, bg=row_bg)
         action_frame.pack(side="left", padx=5)
         cb_v = ttk.Combobox(action_frame, textvariable=target_var, width=22, state="readonly")
-        btn_multi = tk.Button(action_frame, text="⚙ Config Multi", bg="#34495e", fg="white", width=19, command=lambda p=prog: self.open_multi_drums_config(p))
+        btn_multi = tk.Button(action_frame, text="⚙ Multi Config", bg="#34495e", fg="white", width=19, command=lambda p=prog: self.open_multi_drums_config(p))
 
         tk.Label(f, text="Oct:", fg="#aaa", bg=row_bg).pack(side="left", padx=(5,0))
         sp_oct = tk.Spinbox(f, from_=-4, to=4, textvariable=oct_var, width=3, bg="#333", fg="#56dbff", command=self.update_live_mapping)
@@ -245,21 +252,12 @@ class AdvancedMidiEditor(tk.Toplevel):
             mode = t_var.get()
             is_drum = (mode == "Drum")
             is_multi = (mode == "Multi")
-            
-            # --- Lógica de Aviso Visual ---
-            # Si es Drum pero tiene más de un pitch, ponemos la fila en rojo oscuro
             num_pitches = len(self.program_notes.get(prog, []))
-            if is_drum and num_pitches > 1:
-                current_row_color = "#5c1a1a" # Rojo oscuro/aviso
-            else:
-                current_row_color = "#222" # Gris estándar
-
+            current_row_color = "#5c1a1a" if is_drum and num_pitches > 1 else "#222"
             f.config(bg=current_row_color)
             action_frame.config(bg=current_row_color)
             for child in f.winfo_children():
-                if isinstance(child, (tk.Label, tk.Frame)):
-                    child.config(bg=current_row_color)
-
+                if isinstance(child, (tk.Label, tk.Frame)): child.config(bg=current_row_color)
             if is_multi:
                 cb_v.pack_forget(); btn_multi.pack(side="left")
                 state = "disabled"
@@ -269,27 +267,25 @@ class AdvancedMidiEditor(tk.Toplevel):
                 if target_var.get() not in cb_v['values']:
                     cb_v.current(prog if not is_drum and prog < len(GM_INST_LIST) else 0)
                 state = "disabled" if is_drum else "normal"
-
             sp_oct.config(state=state); sp_semi.config(state=state); btn_t.config(state=state)
             self.update_live_mapping()
 
         cb_t.bind("<<ComboboxSelected>>", upd); upd()
-
         self.rows[prog] = {
             'type': t_var, 'target': target_var, 'solo': s_var, 'mute': m_var, 'tuning': t_var_tune,
             'vol': vol_var, 'key': key_var, 'octave': oct_var, 'semitone': semi_var,
             'btn_s': btn_s, 'btn_m': btn_m, 'btn_t': btn_t, 'cb_v': cb_v, 'sp_oct': sp_oct, 'sp_semi': sp_semi,
-            'frame': f, 'action_frame': action_frame, 'upd_func': upd # Guardamos referencia para refrescar
+            'frame': f, 'action_frame': action_frame, 'upd_func': upd
         }
         if prog not in self.live_mapping: self.live_mapping[prog] = {'multi_drums': {}}
         self.update_live_mapping()
 
     def open_multi_drums_config(self, prog):
         top = tk.Toplevel(self)
-        top.title(f"Drums Multi (P:{prog})")
+        top.title(f"Multi Drums (P:{prog})")
         top.geometry("450x500")
         top.transient(self); top.config(bg="#1a1a1a")
-        tk.Label(top, text="Asignación por Pitch:", bg="#1a1a1a", fg="white", font=("Arial", 10, "bold")).pack(pady=10)
+        tk.Label(top, text="Pitch Assignment:", bg="#1a1a1a", fg="white", font=("Arial", 10, "bold")).pack(pady=10)
         container = tk.Frame(top, bg="#1a1a1a"); container.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
         cv = tk.Canvas(container, bg="#222", highlightthickness=0)
         sb = ttk.Scrollbar(container, orient="vertical", command=cv.yview)
@@ -299,17 +295,16 @@ class AdvancedMidiEditor(tk.Toplevel):
         cv.configure(yscrollcommand=sb.set)
         cv.pack(side="left", fill="both", expand=True); sb.pack(side="right", fill="y")
         used_notes = sorted(list(self.program_notes.get(prog, [])))
-        if 'multi_drums' not in self.live_mapping[prog]: self.live_mapping[prog]['multi_drums'] = {}
-
         for note in used_notes:
             rf = tk.Frame(sf, bg="#222"); rf.pack(fill=tk.X, pady=4, padx=5)
             tk.Label(rf, text=f"Pitch {note}", width=10, bg="#222", fg="white").pack(side=tk.LEFT)
+            
             tk.Button(rf, text="🎵", bg="#8e44ad", fg="white", command=lambda n=note: self.play_sf2_note(prog, n)).pack(side=tk.LEFT, padx=5)
-            opciones = ["(Mantener original)"] + GM_DRUMS_LIST
+            opciones = ["(Keep original)"] + GM_DRUMS_LIST
             combo_drum = ttk.Combobox(rf, values=opciones, state="readonly", width=25)
             combo_drum.pack(side=tk.LEFT, padx=5)
-            mapped_val = self.live_mapping[prog]['multi_drums'].get(str(note), "(Mantener original)")
-            combo_drum.set(mapped_val if mapped_val in opciones else "(Mantener original)")
+            mapped_val = self.live_mapping[prog]['multi_drums'].get(str(note), "(Keep original)")
+            combo_drum.set(mapped_val if mapped_val in opciones else "(Keep original)")
             combo_drum.bind("<<ComboboxSelected>>", lambda e, n=note, cb=combo_drum: self._save_multi_val(prog, n, cb.get()))
 
     def _save_multi_val(self, prog, note, val):
@@ -322,21 +317,21 @@ class AdvancedMidiEditor(tk.Toplevel):
         self.after(800, lambda: self.synth.noteoff(0, note))
 
     def toggle_playback(self):
-        if not self.synth or not self.sfid: return messagebox.showwarning("Aviso", "SF2 no cargada.")
-        if not self.midi_path: return messagebox.showwarning("Aviso", "MIDI no cargado.")
+        if not self.synth or not self.sfid: return messagebox.showwarning("Warning", "SF2 not loaded.")
+        if not self.midi_path: return messagebox.showwarning("Warning", "MIDI not loaded.")
         self.update_live_mapping()
         if self.is_playing: self.stop_playback()
         else: self.start_playback()
 
     def start_playback(self):
         self.is_playing = True
-        self.btn_play.config(text="■ DETENER REPRODUCCIÓN", bg="#c0392b")
+        self.btn_play.config(text="■ STOP PLAYBACK", bg="#c0392b")
         self.play_thread = threading.Thread(target=self._play_midi_loop, daemon=True)
         self.play_thread.start()
 
     def stop_playback(self):
         self.is_playing = False
-        self.btn_play.config(text="▶ REPRODUCIR ORIGINAL", bg="#9b59b6")
+        self.btn_play.config(text="▶ PLAY ORIGINAL", bg="#9b59b6")
         if self.synth:
             for ch in range(16): self.synth.cc(ch, 120, 0); self.synth.cc(ch, 123, 0)
 
@@ -355,7 +350,6 @@ class AdvancedMidiEditor(tk.Toplevel):
             active_program = {ch: 0 for ch in range(16)}
             playing_notes_orig = set(); playing_notes_tune = {}
             if self.sfid_tune: self.synth.program_select(15, self.sfid_tune, 0, 0)
-
             for msg in mido.MidiFile(self.midi_path):
                 if not self.is_playing: break
                 current_time += msg.time
@@ -370,7 +364,6 @@ class AdvancedMidiEditor(tk.Toplevel):
                     while waited < sleep_time and self.is_playing:
                         chunk = min(0.02, sleep_time - waited)
                         time.sleep(chunk); waited += chunk
-
                 if not self.is_playing: break
                 if hasattr(msg, 'channel'):
                     prog = active_program.get(msg.channel, 0)
@@ -385,7 +378,7 @@ class AdvancedMidiEditor(tk.Toplevel):
                                     playing_notes_orig.add((9, dp)); self.synth.noteon(9, dp, msg.velocity)
                                 elif m['type'] == 'multi':
                                     mapped_str = m.get('multi_drums', {}).get(str(msg.note), "")
-                                    if mapped_str and mapped_str != "(Mantener original)":
+                                    if mapped_str and mapped_str != "(Keep original)":
                                         dp = int(mapped_str.split(':')[0])
                                         playing_notes_orig.add((9, dp)); self.synth.noteon(9, dp, msg.velocity)
                                     else:
@@ -393,8 +386,7 @@ class AdvancedMidiEditor(tk.Toplevel):
                                 else:
                                     playing_notes_orig.add((msg.channel, msg.note)); self.synth.noteon(msg.channel, msg.note, msg.velocity)
                             if m['tuning'] and self.sfid_tune and m['type'] == 'inst':
-                                tn = clamp(msg.note + m['transpose'])
-                                playing_notes_tune[(msg.channel, msg.note)] = tn; self.synth.noteon(15, tn, 100) 
+                                tn = clamp(msg.note + m['transpose']); playing_notes_tune[(msg.channel, msg.note)] = tn; self.synth.noteon(15, tn, 100) 
                         else:
                             if m['type'] == 'drum':
                                 try: dp = int(m['target'].split(':')[0])
@@ -402,7 +394,7 @@ class AdvancedMidiEditor(tk.Toplevel):
                                 if (9, dp) in playing_notes_orig: playing_notes_orig.remove((9, dp)); self.synth.noteoff(9, dp)
                             elif m['type'] == 'multi':
                                 ms = m.get('multi_drums', {}).get(str(msg.note), "")
-                                if ms and ms != "(Mantener original)":
+                                if ms and ms != "(Keep original)":
                                     dp = int(ms.split(':')[0])
                                     if (9, dp) in playing_notes_orig: playing_notes_orig.remove((9, dp)); self.synth.noteoff(9, dp)
                                 else:
@@ -414,7 +406,7 @@ class AdvancedMidiEditor(tk.Toplevel):
                     else: self._send_to_orig_synth(msg)
         except: pass
         finally:
-            self.is_playing = False; self.after(0, lambda: self.btn_play.config(text="▶ REPRODUCIR ORIGINAL", bg="#9b59b6")); self.stop_playback()
+            self.is_playing = False; self.after(0, lambda: self.btn_play.config(text="▶ PLAY ORIGINAL", bg="#9b59b6")); self.stop_playback()
 
     def on_close(self):
         self.stop_playback()
@@ -436,17 +428,9 @@ class AdvancedMidiEditor(tk.Toplevel):
 
     def save_config(self):
         if not self.config_path: return
-        data = {}
-        for k, v in self.rows.items():
-            data[str(k)] = {
-                'type': v['type'].get(), 'val_str': v['target'].get(), 
-                'solo': v['solo'].get(), 'mute': v['mute'].get(), 'tuning': v['tuning'].get(),
-                'vol': v['vol'].get(), 'key': v['key'].get(),
-                'oct': v['octave'].get(), 'semi': v['semitone'].get(),
-                'multi_drums': self.live_mapping.get(k, {}).get('multi_drums', {})
-            }
+        data = {str(k): {'type': v['type'].get(), 'val_str': v['target'].get(), 'solo': v['solo'].get(), 'mute': v['mute'].get(), 'tuning': v['tuning'].get(), 'vol': v['vol'].get(), 'key': v['key'].get(), 'oct': v['octave'].get(), 'semi': v['semitone'].get(), 'multi_drums': self.live_mapping.get(k, {}).get('multi_drums', {})} for k, v in self.rows.items()}
         with open(self.config_path, 'w') as f: json.dump(data, f, indent=4)
-        messagebox.showinfo("OK", "Configuración guardada.")
+        messagebox.showinfo("OK", "Configuration saved.")
 
     def load_config(self):
         if not self.config_path or not os.path.exists(self.config_path): return
@@ -461,9 +445,8 @@ class AdvancedMidiEditor(tk.Toplevel):
                     v['btn_s'].config(bg="#E6DB74" if v['solo'].get() else "#444", fg="black" if v['solo'].get() else "white")
                     v['btn_m'].config(bg="#F92672" if v['mute'].get() else "#444")
                     v['btn_t'].config(bg="#3498db" if v['tuning'].get() else "#444")
-                    if 'multi_drums' not in self.live_mapping[prog]: self.live_mapping[prog]['multi_drums'] = {}
                     self.live_mapping[prog]['multi_drums'] = c.get('multi_drums', {})
-                    v['upd_func']() # Ejecutar actualización de UI (incluye el aviso en rojo)
+                    v['upd_func']()
             self.update_live_mapping()
         except: pass
 
@@ -508,7 +491,7 @@ class AdvancedMidiEditor(tk.Toplevel):
                                 active_notes_tracker[note_key] = (9, new_msg.note, 'drum')
                             elif m['type'] == 'multi':
                                 ms = m.get('multi_drums', {}).get(str(msg.note), "")
-                                if ms and ms != "(Mantener original)":
+                                if ms and ms != "(Keep original)":
                                     dv = int(ms.split(':')[0]); new_msg = msg.copy(channel=9, note=dv, velocity=new_vel)
                                     drum_events.append((cur_time, new_msg)); has_drum_notes = True
                                     active_notes_tracker[note_key] = (9, new_msg.note, 'drum')
@@ -549,7 +532,7 @@ class AdvancedMidiEditor(tk.Toplevel):
     def export_midi(self):
         if not self.midi: return
         path = filedialog.asksaveasfilename(defaultextension=".mid", filetypes=[("MIDI files", "*.mid")])
-        if path: self.process_midi_logic().save(path); messagebox.showinfo("Éxito", "Exportado.")
+        if path: self.process_midi_logic().save(path); messagebox.showinfo("Success", "Exported.")
 
 if __name__ == "__main__":
     root = TkinterDnD.Tk(); root.withdraw()
