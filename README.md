@@ -4,8 +4,6 @@
 
 ![Python](https://img.shields.io/badge/python-3.8%2B-brightgreen.svg)
 
----
-
 ## Features
 
 ### 🛠 Precise Instrument Control
@@ -34,7 +32,14 @@
 
 ## 🛠 Installation & Requirements
 
-To run **General MIDIfyer**, you will need:
+Simply download the latest version .exe from the releases and run it:
+
+
+### https://github.com/VGMRUS/General-MIDIfyer/releases
+
+---
+
+Otherwise if you want to run **General MIDIfyer** from the main.py you will need:
 
 1.  **Python 3.8+**
 2.  **Fluidsynth** (for real-time audio playback)
