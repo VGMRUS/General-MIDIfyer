@@ -13,7 +13,7 @@
 * **Transposition Suite:** Shift any instrument by **octaves** or **semitones** to fit the GM standard pitch or correct pitch offsets.
 * **Volume Multiplier:** Fine-tune the mix with a percentage-based volume gain (%) for each individual instrument by editing the velocities.
 
-<img width="1276" height="579" alt="imagen" src="https://github.com/user-attachments/assets/960c45ff-5bbe-40d3-9829-37d3cc93f610" />
+<img width="1298" height="485" alt="imagen" src="https://github.com/user-attachments/assets/66b0ea7b-3637-4927-ae53-bca0af54e89b" />
 
 ### 🔊 Advanced Playback & Tuning
 * **SF2 Engine:** Play back the original MIDI using the original non GM SoundFont (.SF2) via a built-in Fluidsynth integration, start the original midi any second you want.
