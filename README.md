@@ -52,6 +52,8 @@ Otherwise if you want to run **General MIDIfyer** from the main.py you will need
 
 ## 🚀 How to use
 
+### Quick Video Tutorial: https://youtu.be/MBsK-8mpeMI
+
 1.  **Drag & Drop:** Toss your `.mid` and `.sf2` files into the interface.
 2.  **Identify:** Use Solo/Mute and the Sample Preview to hear what each track does.
 3.  **Remap:** Change "Inst" to "Drum" or "Multi" as needed. 
